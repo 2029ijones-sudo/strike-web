@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Strike Web Interface</title>
   <script src="https://cdn.jsdelivr.net/npm/strike-client@0.5.3/strike.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.11.0/dist/jszip.min.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: auto; }
     textarea, select, input { width: 100%; margin: 5px 0; padding: 8px; }
@@ -39,12 +40,11 @@
     const frameworkSelect = document.getElementById('framework');
     const templateSelect = document.getElementById('template');
 
-    // Fill frameworks & templates from Strike defaults
+    // Fill frameworks & templates
     const frameworks = [
       "Express","Fastify","Koa","Next.js","Vite","NestJS","Hapi",
       "Sapper","AdonisJS","FeathersJS","LoopBack","Flask","Django","FastAPI"
     ];
-
     const templates = [
       "Bot","Dashboard","API","CLI Tool","Web Scraper","Machine Learning Project","Microservice"
     ];
@@ -55,7 +55,6 @@
       option.textContent = fw;
       frameworkSelect.appendChild(option);
     });
-
     templates.forEach(tp => {
       const option = document.createElement('option');
       option.value = tp;
@@ -67,6 +66,20 @@
     function log(msg) {
       output.textContent += msg + "\n";
       output.scrollTop = output.scrollHeight;
+    }
+
+    // Convert project structure to ZIP
+    async function downloadProjectZip(projectFiles, projectName = "strike-project") {
+      const zip = new JSZip();
+      for (const file of projectFiles) {
+        zip.file(file.path, file.content);
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = projectName + ".zip";
+      link.click();
+      URL.revokeObjectURL(link.href);
     }
 
     generateBtn.addEventListener('click', async () => {
@@ -84,7 +97,6 @@
       log("Description:\n" + description + "\n");
 
       try {
-        // Use strike-client API
         if (!strike || !strike.generateProject) throw new Error("Strike client not loaded correctly.");
 
         const projectResult = await strike.generateProject({
@@ -92,11 +104,20 @@
           template,
           description,
           dependencies,
-          logFunction: log // optionally pass logging function if supported
+          logFunction: log
         });
 
         log("\n✅ Project generated successfully!");
         log(JSON.stringify(projectResult, null, 2));
+
+        // Check if projectResult contains files
+        if (projectResult && Array.isArray(projectResult.files) && projectResult.files.length > 0) {
+          log("\n📦 Preparing ZIP for download...");
+          await downloadProjectZip(projectResult.files, "strike-project");
+          log("✅ Download ready!");
+        } else {
+          log("⚠️ No files available for download.");
+        }
 
       } catch (err) {
         log("\n❌ Error generating project:\n" + err.message);
