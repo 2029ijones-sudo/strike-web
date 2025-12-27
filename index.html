@@ -6,57 +6,28 @@
   <title>Strike Web Interface</title>
   <script src="https://cdn.jsdelivr.net/npm/strike-client@0.5.3/strike.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    textarea { width: 100%; height: 100px; }
-    select, button { padding: 5px; margin: 5px 0; }
-    #output { margin-top: 20px; white-space: pre-wrap; background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+    textarea, select, input { width: 100%; margin: 5px 0; padding: 8px; }
+    button { padding: 10px 20px; margin-top: 10px; cursor: pointer; }
+    #output { margin-top: 20px; white-space: pre-wrap; background: #f4f4f4; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto; }
+    h1 { text-align: center; }
+    label { font-weight: bold; display: block; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h1>Strike Web Interface</h1>
 
   <label for="framework">Framework:</label>
-  <select id="framework">
-    <option>Express</option>
-    <option>Fastify</option>
-    <option>Koa</option>
-    <option>Next.js</option>
-    <option>Vite</option>
-    <option>NestJS</option>
-    <option>Hapi</option>
-    <option>Sapper</option>
-    <option>AdonisJS</option>
-    <option>FeathersJS</option>
-    <option>LoopBack</option>
-    <option>Flask</option>
-    <option>Django</option>
-    <option>FastAPI</option>
-  </select>
-
-  <br>
+  <select id="framework"></select>
 
   <label for="template">Template:</label>
-  <select id="template">
-    <option>Bot</option>
-    <option>Dashboard</option>
-    <option>API</option>
-    <option>CLI Tool</option>
-    <option>Web Scraper</option>
-    <option>Machine Learning Project</option>
-    <option>Microservice</option>
-  </select>
-
-  <br>
+  <select id="template"></select>
 
   <label for="description">Project Description:</label>
-  <textarea id="description"></textarea>
+  <textarea id="description" placeholder="Describe your project (routes, dashboard, etc.)"></textarea>
 
-  <br>
-
-  <label for="dependencies">Optional Dependencies (comma-separated):</label>
+  <label for="dependencies">Optional Node.js Dependencies (comma-separated):</label>
   <input type="text" id="dependencies" placeholder="mongoose, socket.io, graphql">
-
-  <br>
 
   <button id="generateBtn">Generate Project</button>
 
@@ -65,27 +36,70 @@
   <script>
     const output = document.getElementById('output');
     const generateBtn = document.getElementById('generateBtn');
+    const frameworkSelect = document.getElementById('framework');
+    const templateSelect = document.getElementById('template');
+
+    // Fill frameworks & templates from Strike defaults
+    const frameworks = [
+      "Express","Fastify","Koa","Next.js","Vite","NestJS","Hapi",
+      "Sapper","AdonisJS","FeathersJS","LoopBack","Flask","Django","FastAPI"
+    ];
+
+    const templates = [
+      "Bot","Dashboard","API","CLI Tool","Web Scraper","Machine Learning Project","Microservice"
+    ];
+
+    frameworks.forEach(fw => {
+      const option = document.createElement('option');
+      option.value = fw;
+      option.textContent = fw;
+      frameworkSelect.appendChild(option);
+    });
+
+    templates.forEach(tp => {
+      const option = document.createElement('option');
+      option.value = tp;
+      option.textContent = tp;
+      templateSelect.appendChild(option);
+    });
+
+    // Logging helper
+    function log(msg) {
+      output.textContent += msg + "\n";
+      output.scrollTop = output.scrollHeight;
+    }
 
     generateBtn.addEventListener('click', async () => {
-      const framework = document.getElementById('framework').value;
-      const template = document.getElementById('template').value;
+      output.textContent = "";
+      const framework = frameworkSelect.value;
+      const template = templateSelect.value;
       const description = document.getElementById('description').value;
-      const dependencies = document.getElementById('dependencies').value.split(',').map(d => d.trim()).filter(Boolean);
+      const dependencies = document.getElementById('dependencies').value
+        .split(',').map(d => d.trim()).filter(Boolean);
 
-      output.textContent = "🚀 Generating project...";
+      log("🚀 Starting project generation...");
+      log(`Framework: ${framework}`);
+      log(`Template: ${template}`);
+      log(`Dependencies: ${dependencies.join(', ') || "None"}`);
+      log("Description:\n" + description + "\n");
 
       try {
-        // Assuming strike-client exposes a function `strike.generateProject()`
-        const result = await strike.generateProject({
+        // Use strike-client API
+        if (!strike || !strike.generateProject) throw new Error("Strike client not loaded correctly.");
+
+        const projectResult = await strike.generateProject({
           framework,
           template,
           description,
-          dependencies
+          dependencies,
+          logFunction: log // optionally pass logging function if supported
         });
 
-        output.textContent = "✅ Project generated successfully!\n\n" + JSON.stringify(result, null, 2);
+        log("\n✅ Project generated successfully!");
+        log(JSON.stringify(projectResult, null, 2));
+
       } catch (err) {
-        output.textContent = "❌ Error:\n" + err.message;
+        log("\n❌ Error generating project:\n" + err.message);
       }
     });
   </script>
